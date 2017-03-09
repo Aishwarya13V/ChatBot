@@ -1,4 +1,4 @@
-﻿using Microsoft.Bot.Connector;
+using Microsoft.Bot.Connector;
 using Newtonsoft.Json;
 using System;
 using System.Net.Http;
@@ -15,7 +15,7 @@ namespace Luis
 
             using (var client = new HttpClient())
             {
-                string uri = "https://api.projectoxford.ai/luis/v2.0/apps/23ec4ca7-e8b6-4e08-a40f-d4f3919b264a?subscription-key=6804323b2a6f441cb728ce5b55546882&q=" + strEscaped;
+                string uri = "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/5ab00be7-3f48-4a1b-a529-3e40e4f5b1cc?subscription-key=a5508b11cceb41bf9454c415ecb8bf2f&verbose=false&spellCheck=false&q=" + strEscaped;
                 HttpResponseMessage msg = await client.GetAsync(uri);
 
                 if (msg.IsSuccessStatusCode)
