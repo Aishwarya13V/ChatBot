@@ -18,6 +18,7 @@ namespace Luis
 {
     [BotAuthentication]
     [RoutePrefix("api/calling")]
+    [Serializable]
     public class MessagesController : ApiController
     {
         /// <summary>
@@ -30,6 +31,7 @@ namespace Luis
             CheckWeather weather = new CheckWeather();
             CheckResults results = new CheckResults();
             Prompting prompts = new Prompting();
+            Enquiry Enquiry = new Enquiry();
             if (activity.Type == ActivityTypes.Message)
             {
                 Luis.StockLUIS stLuis = await Luis.LUISStockClient.ParseUserInput(activity.Text);
@@ -40,8 +42,8 @@ namespace Luis
                 ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
                 // Get the stateClient to get/set Bot Data
                 StateClient _stateClient = activity.GetStateClient();
-                BotData _botData = _stateClient.BotState.GetUserData(activity.ChannelId, activity.Conversation.Id);
-
+                BotData _botData = _stateClient.BotState.GetUserData(activity.Type, activity.Text); ;
+                
                 //data base connection
                 string connectionString = "";
                 connectionString = "Data Source=VISHWANATH\\SQLSERVER2014;Initial Catalog=Bot_db;Integrated Security=true;User ID=Vishwanath; Password = ";
@@ -156,10 +158,11 @@ namespace Luis
                     case "Specialization":
                         string fieldss = stLuis.entities[1].entity.ToLower();
                         con.Open();
-                        cmd = new SqlCommand("select Specialization,S_Desc from Specializations where Field = '" + fieldss + "'", con);
+                        cmd = new SqlCommand("select Specialization,S_Desc, Url from Specializations where Field = '" + fieldss + "'", con);
                         dr = cmd.ExecuteReader();
                         string[] Specialization = new string[34];
                         string[] S_Desc = new string[34];
+                        string[] Url = new string[34];
                         Activity reply4 = activity.CreateReply(" ");
                         reply4.Attachments = new List<Attachment>();
                         reply4.AttachmentLayout = AttachmentLayoutTypes.Carousel;
@@ -167,7 +170,8 @@ namespace Luis
                         {
 
                             Specialization[len] = "" + dr["Specialization"];
-                            S_Desc[len] = "" + dr["S_Desc"];                            
+                            S_Desc[len] = "" + dr["S_Desc"];
+                            Url[len] = "" + dr["Url"];                         
                             len++;                           
                         }
                         dr.Close();
@@ -178,13 +182,13 @@ namespace Luis
                             reply4.Attachments.Add(
                                  new ThumbnailCard
                                  {
-                                     Title =  Specialization[i] ,
+                                     Title = Specialization[i],
                                      Subtitle = S_Desc[i],
                                      Images = new List<CardImage>
                                     {
                                             new CardImage
                                             {
-                                                Url = $"http://www.delhionlinegifts.com/images/36Pink_roses.jpg"
+                                                Url = Url[i],
                                             }
                                     },
                                  }.ToAttachment()
@@ -224,7 +228,7 @@ namespace Luis
                                     {
                                             new CardImage
                                             {
-                                                Url = $"http://www.delhionlinegifts.com/images/36Pink_roses.jpg"
+                                                Url = $"http://d2cyt36b7wnvt9.cloudfront.net/100marks/wp-content/uploads/2015/12/15151818/Entrance-exams.jpg"
                                             }
                                     },
                                  }.ToAttachment()
@@ -233,11 +237,13 @@ namespace Luis
                         }
                         await connector.Conversations.ReplyToActivityAsync(reply3);
                         break;
-                    case "Career":                        
-                        await Conversation.SendAsync(activity, () => { return Chain.From(() => FormDialog.FromForm(Enquiry.BuildEnquiryForm)); });
+                    case "Career":
+                        await Conversation.SendAsync(activity, () => new RootDialog());
+                        //await Conversation.SendAsync(activity, () => { return Chain.From(() => FormDialog.FromForm(Enquiry.BuildEnquiryForm)); });
+                        //await Conversation.SendAsync(activity, () => new NumberGuesserDialog()
                         //if (count == 3)
                         //{
-                             // Conversation.SendAsync(activity, () => { return Chain.From(() => FormDialog.FromForm(Prompting.BuildPromptingForm)); });
+                        // Conversation.SendAsync(activity, () => { return Chain.From(() => FormDialog.FromForm(Prompting.BuildPromptingForm)); });
                         //}
                         //count++;
                         break;
