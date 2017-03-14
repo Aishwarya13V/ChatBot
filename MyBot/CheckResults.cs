@@ -1,4 +1,4 @@
-﻿using Microsoft.Bot.Builder.Dialogs;
+using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.FormFlow;
 using Microsoft.Bot.Connector;
 using MyBot.FormFlow;
@@ -13,6 +13,7 @@ using System.Web;
 
 namespace MyBot
 {
+    [Serializable]
     public class CheckResults 
     {
         ConnectorClient connector = new ConnectorClient(new Uri("http://localhost:9000/api/messages"));
@@ -145,37 +146,6 @@ namespace MyBot
             }
             return strRet;
 
-        }
-        
-        /*public async Task StartAsync(IDialogContext context)
-        {
-            context.Wait(MessageReceivedAsync);
-
-        }
-        public virtual async Task MessageReceivedAsync(IDialogContext context, IAwaitable<IMessageActivity> argument)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("Would you like to know about the courses?");
-            PromptDialog.Confirm(context, Courses, sb.ToString(), "Didn't get that!");
-
-        }
-
-        private async Task Courses(IDialogContext context, IAwaitable<bool> result)
-        {
-            // Get the response from the user
-            var confirm = await result;
-            if (confirm) // They said yes
-            {
-                // Start a new Game
-                await context.PostAsync("Hi Welcome! - Guess a number between 1 and 10");
-                context.Wait(MessageReceivedAsync);
-            }
-            else // They said no
-            {
-                await context.PostAsync("Goodbye!");
-                context.Wait(MessageReceivedAsync);
-            }
-        }*/
-
+        }       
     }
 }
