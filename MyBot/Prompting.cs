@@ -1,4 +1,4 @@
-﻿using Microsoft.Bot.Builder.Dialogs;
+using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.FormFlow;
 using Microsoft.Bot.Builder.FormFlow.Advanced;
 using Microsoft.Bot.Connector;
@@ -15,8 +15,9 @@ namespace MyBot.FormFlow
     [Serializable]
     public class Prompting
     {
-        //[Prompt("would you like to know more about this field?{||}")]
+        Enquiry enquiry = new Enquiry();
         public bool More { get; set; }
+        internal  string fields;
         public static IForm<Prompting> BuildPromptingForm()
         {
             Prompting prompt = new Prompting();
@@ -27,17 +28,19 @@ namespace MyBot.FormFlow
                 {
                     context.PrivateConversationData.SetValue<bool>(
                        "More Information", Prompting.More);
-                    string result = await prompt.field_Desc(Prompting.More);
+                    string result = await prompt.field_Desc(Prompting.More, context);
                     await context.PostAsync(result);
-
                 })
                 
                 .Build();
         }
-        public async Task<string> field_Desc(bool More)
-        {
+        
+        public async Task<string> field_Desc(bool More, IDialogContext context)
+        {            
             string strRet = " ";
-            string connectionString = "";
+            fields = "" + context.PrivateConversationData.Get<string>("field");
+            //field = enquiry.save.ToString();
+            string connectionString = "";            
             connectionString = "Data Source=VISHWANATH\\SQLSERVER2014;Initial Catalog=Bot_db;Integrated Security=true;MultipleActiveResultSets=true;User ID=Vishwanath; Password = ";
             SqlConnection con = new SqlConnection(connectionString);
             SqlCommand cmd = new SqlCommand();
@@ -45,13 +48,12 @@ namespace MyBot.FormFlow
             if (More == true)
             {
                 con.Open();
-                cmd.Connection = con;
-                cmd.CommandText = "select PreRequest from UG_PreReq";
-                strRet += "  \nThese are the groups you can take in intermediate for  :  \n";
+                cmd = new SqlCommand("select Exam_Name,Exam_Desc from Exams where Exam_ID IN (select Exam_ID from UG_Fields where Field = '" + fields + "')", con);
+                strRet += "  \nHere is the list of exams for " + fields + " :  \n";
                 dr = cmd.ExecuteReader();
                 while (dr.Read())
                 {
-                    strRet += dr["PreRequest"] + " , ";
+                    strRet += "**" + dr["Exam_Name"] + "**" + dr["Exam_Desc"];
                 }
                 dr.Close();
                 cmd.Dispose();
@@ -59,6 +61,6 @@ namespace MyBot.FormFlow
             }
             return strRet;
         }
-
+        
     }
 }
