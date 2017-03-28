@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
@@ -6,12 +6,8 @@ using Microsoft.Bot.Connector;
 using System.Net;
 using Microsoft.Bot.Builder.Dialogs;
 using MyBot;
-using System.Linq;
-using System.Globalization;
-using System.Web.Services.Description;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using Microsoft.Bot.Builder.FormFlow;
 using MyBot.FormFlow;
 
 namespace Luis
@@ -29,7 +25,6 @@ namespace Luis
         {
             CheckNews news = new CheckNews();
             CheckWeather weather = new CheckWeather();
-            CheckResults results = new CheckResults();
             Prompting prompts = new Prompting();
             Enquiry Enquiry = new Enquiry();
             if (activity.Type == ActivityTypes.Message)
@@ -37,20 +32,21 @@ namespace Luis
                 Luis.StockLUIS stLuis = await Luis.LUISStockClient.ParseUserInput(activity.Text);
                 string strRet = " ";
                 int len = 0;
-                //await Conversation.SendAsync(activity, () => new Prompting());
 
-                ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
+               
                 // Get the stateClient to get/set Bot Data
                 //StateClient _stateClient = activity.GetStateClient();
                 //BotData _botData = _stateClient.BotState.GetUserData(activity.Type, activity.Text); ;
 
                 //data base connection
                 string connectionString = "";
-                connectionString = "Data Source=kavya;Initial Catalog=Bot_db;Integrated Security=true;User ID=kavya; Password = ";
+                connectionString = "Data Source=VISHWANATH\\SQLSERVER2014;Initial Catalog=Bot_db;Integrated Security=true;User ID=Vishwanath; Password = ";
                 SqlConnection con = new SqlConnection(connectionString);
                 SqlCommand cmd = new SqlCommand();
                 SqlDataReader dr;
 
+                ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
+               
                 switch (stLuis.topScoringIntent.intent)
                 {
                     case "Dialogs":
@@ -58,12 +54,21 @@ namespace Luis
                         strRet = dialog[new Random().Next(0, dialog.Length)];
                         break;
                     case "Intro":
-                        string[] Intro = { "I'm xxx.You ask anything related to career guidance and apart fromt that you can get trending news and weather forecast.", "Hey..!!!!.I'm xxx.Nice to meet you. You can get career-related information.By the way what's your name.", "I'm the best bot you can ever have" };
+                        string[] Intro = { "I'm xxx.You ask anything related to career guidance and apart from that you can get trending news and weather forecast. What's your name?", "Hey..!!!!.I'm xxx.Nice to meet you. You can get career-related information.By the way what's your name.", "I'm the best bot you can ever have" };
                         strRet = Intro[new Random().Next(0, Intro.Length)];
                         break;
                     case "NormalConvo":
                         string[] Convo = { "Don't worry..we will solve it together.", "Tell me what's worrying you", "I guess I can solve it" };
                         strRet = Convo[new Random().Next(0, Convo.Length)];
+                        break;
+                    case "User":
+                        string name = stLuis.entities[0].entity;
+                        string[] user = { "Heyy "+name + " what can I do ","wasupp? " + name + " how are you doin?"};
+                        strRet = user[new Random().Next(0, user.Length)];
+                        break;
+                    case "End_Convo":
+                        string[] endConvo = { "It was nice talking to you. I hope this would be helpful.","I would be glad if this helps you in choosing the right path","I am happy, if this conversation would be of any help in choosing correct path for your career.All the best, hope you achieve great things ahead." };
+                        strRet = endConvo[new Random().Next(0, endConvo.Length)];
                         break;
                     case "News":
                         await news.getNews();
@@ -114,100 +119,119 @@ namespace Luis
                         await connector.Conversations.ReplyToActivityAsync(reply1);
                         break;
                     case "Course":
-                        string fields = stLuis.entities[1].entity.ToLower();
+                        string fields = stLuis.entities[0].entity.ToLower();
+                        //for (int i = 0; i < 2; i++)
+                        if (stLuis.entities[1].type.ToLower() == "field")
+                            fields = stLuis.entities[1].entity.ToLower();
                         con.Open();
-                        cmd = new SqlCommand("select Course,Course_Desc,Years,Url from Courses where Field = '" + fields + "'", con);
-                        dr = cmd.ExecuteReader();
-                        string[] Course = new string[15];
-                        string[] Course_Desc = new string[15];
-                        string[] Years = new string[15];
-                        string[] Url1 = new string[15];
-                        Activity reply5 = activity.CreateReply(" ");
-                        reply5.Attachments = new List<Attachment>();
-                        reply5.AttachmentLayout = AttachmentLayoutTypes.Carousel;
-                        while (dr.Read())
-                        {
-                            Course[len] = "" + dr["Course"];
-                            Course_Desc[len] = "" + dr["Course_Desc"];
-                            Years[len] = "" + dr["Years"];
-                            Url1[len] = "" + dr["Url"];
-                            len++;
-                        }
-                        dr.Close();
-                        cmd.Dispose();
-                        con.Close();
-                        for (int i = 0; i < len; i++)
-                        {
-                            reply5.Attachments.Add(
-                                 new ThumbnailCard
-                                 {
-                                     Title = Course[i],
-                                     Subtitle = Course_Desc[i] + "-" + Years[i],
-                                     Images = new List<CardImage>
+                            cmd = new SqlCommand("select Course,Course_Desc,Years,Url from Courses where Field = '" + fields + "'", con);
+                            dr = cmd.ExecuteReader();
+                            string[] Course = new string[30];
+                            string[] Course_Desc = new string[30];
+                            string[] Years = new string[30];
+                            string[] Url1 = new string[30];
+                            while (dr.Read())
+                            {
+                                Course[len] = "" + dr["Course"];
+                                Course_Desc[len] = "" + dr["Course_Desc"];
+                                Years[len] = "" + dr["Years"];
+                                Url1[len] = "" + dr["Url"];
+                                len++;
+                            }
+                            dr.Close();
+                            cmd.Dispose();
+                            con.Close();
+                            Activity reply5 = activity.CreateReply();
+                            reply5.Attachments = new List<Attachment>();
+                            reply5.AttachmentLayout = AttachmentLayoutTypes.Carousel;
+                            for (int i = 0; i < len; i++)
+                            {
+                                reply5.Attachments.Add(
+                                     new ThumbnailCard
                                      {
+                                         Title = Course[i],
+                                         Subtitle = Course_Desc[i] + "-" + Years[i],
+                                         Images = new List<CardImage>
+                                         {
                                             new CardImage
                                             {
                                                 Url = Url1[i],
                                             }
-                                     },
-                                 }.ToAttachment()
-                            );
+                                         },
+                                     }.ToAttachment()
+                                );
 
-                        }
-                        await connector.Conversations.ReplyToActivityAsync(reply5);
-
+                            }
+                            await connector.Conversations.ReplyToActivityAsync(reply5);
+                        //}                                            
+                        /*catch (IndexOutOfRangeException e)
+                        {
+                            strRet = "Ummm...can you specify in the following format 'Courses in field name' without any typos.";
+                        }*/
+                        
                         break;
                     case "Specialization":
-                        string fieldss = stLuis.entities[1].entity.ToLower();
-                        con.Open();
-                        cmd = new SqlCommand("select Specialization,S_Desc, Url from Specializations where Field = '" + fieldss + "'", con);
-                        dr = cmd.ExecuteReader();
-                        string[] Specialization = new string[34];
-                        string[] S_Desc = new string[34];
-                        string[] Url2 = new string[34];
-                        Activity reply4 = activity.CreateReply(" ");
-                        reply4.Attachments = new List<Attachment>();
-                        reply4.AttachmentLayout = AttachmentLayoutTypes.Carousel;
-                        while (dr.Read())
+                        string fieldss = "";
+                        try
                         {
+                            for(int i=0; i<2; i++)
+                            if (stLuis.entities[i].type.ToLower() == "field")
+                                fieldss = stLuis.entities[i].entity.ToLower();
+                            con.Open();
+                            cmd = new SqlCommand("select Specialization,S_Desc, Url from Specializations where Field = '" + fieldss + "'", con);
+                            dr = cmd.ExecuteReader();
+                            string[] Specialization = new string[34];
+                            string[] S_Desc = new string[34];
+                            string[] Url = new string[34];
+                            Activity reply4 = activity.CreateReply(" ");
+                            reply4.Attachments = new List<Attachment>();
+                            reply4.AttachmentLayout = AttachmentLayoutTypes.Carousel;
+                            while (dr.Read())
+                            {
 
-                            Specialization[len] = "" + dr["Specialization"];
-                            S_Desc[len] = "" + dr["S_Desc"];
-                            Url2[len] = "" + dr["Url"];
-                            len++;
-                        }
-                        dr.Close();
-                        cmd.Dispose();
-                        con.Close();
-                        for (int i = 0; i < len; i++)
-                        {
-                            reply4.Attachments.Add(
-                                 new ThumbnailCard
-                                 {
-                                     Title = Specialization[i],
-                                     Subtitle = S_Desc[i],
-                                     Images = new List<CardImage>
-                                    {
+                                Specialization[len] = "" + dr["Specialization"];
+                                S_Desc[len] = "" + dr["S_Desc"];
+                                Url[len] = "" + dr["Url"];
+                                len++;
+                            }
+                            dr.Close();
+                            cmd.Dispose();
+                            con.Close();
+                            for (int i = 0; i < len; i++)
+                            {
+                                reply4.Attachments.Add(
+                                     new ThumbnailCard
+                                     {
+                                         Title = Specialization[i],
+                                         Subtitle = S_Desc[i],
+                                         Images = new List<CardImage>
+                                        {
                                             new CardImage
                                             {
-                                                Url = Url2[i],
+                                                Url = Url[i],
                                             }
-                                    },
-                                 }.ToAttachment()
-                            );
+                                        },
+                                     }.ToAttachment()
+                                );
 
+                            }
+                            await connector.Conversations.ReplyToActivityAsync(reply4);
                         }
-                        await connector.Conversations.ReplyToActivityAsync(reply4);
-
+                        catch (IndexOutOfRangeException e)
+                        {
+                            strRet = "Ummm...can you specify in the following format 'Specialization in field name' without any typos.";
+                        }
                         break;
                     case "Exams":
                         string field = stLuis.entities[0].entity.ToLower();
+                        //for (int i = 0; i < 2; i++)
+                        if (stLuis.entities[1].type.ToLower() == "field")
+                                    field = stLuis.entities[1].entity.ToLower();
                         con.Open();
                         cmd = new SqlCommand("select Exam_Name,Exam_Desc from Exams where Exam_ID IN (select Exam_ID from UG_Fields where Field = '" + field + "') ", con);
                         dr = cmd.ExecuteReader();
                         string[] Exam_Name = new string[7];
                         string[] Exam_Desc = new string[7];
-                        string[] Url3 = new string[7];
                         Activity reply3 = activity.CreateReply(" ");
                         reply3.Attachments = new List<Attachment>();
                         reply3.AttachmentLayout = AttachmentLayoutTypes.Carousel;
@@ -215,7 +239,6 @@ namespace Luis
                         {
                             Exam_Name[len] = "" + dr["Exam_Name"];
                             Exam_Desc[len] = "" + dr["Exam_Desc"];
-                            Url3[len] = "" + dr["Url"];
                             len++;
                         }
                         dr.Close();
@@ -232,7 +255,7 @@ namespace Luis
                                     {
                                             new CardImage
                                             {
-                                                Url = Url3[i],
+                                                Url = $"http://d2cyt36b7wnvt9.cloudfront.net/100marks/wp-content/uploads/2015/12/15151818/Entrance-exams.jpg"
                                             }
                                     },
                                  }.ToAttachment()
@@ -242,7 +265,7 @@ namespace Luis
                         await connector.Conversations.ReplyToActivityAsync(reply3);
                         break;
                     case "Career":
-                        await Conversation.SendAsync(activity, () => new RootDialog());                      
+                        await Conversation.SendAsync(activity, () => new RootDialog());
                         break;
                     case "None":
                         strRet = "I think you are going off topic. I can help you with career, news and weather. Please ask any queries related to this. ";
@@ -266,6 +289,7 @@ namespace Luis
             var response = Request.CreateResponse(HttpStatusCode.OK);
             return response;
         }
+
         private Activity HandleSystemMessage(Activity message)
         {
             if (message.Type == ActivityTypes.DeleteUserData)
@@ -279,9 +303,9 @@ namespace Luis
                 // Use Activity.MembersAdded and Activity.MembersRemoved and Activity.Action for info
                 // Not available in all channels
 
-                ConnectorClient connector = new ConnectorClient(new Uri(message.ServiceUrl));
-                Activity reply = message.CreateReply($"I'm xxx.You can ask anything related to career guidace and apart from that you can get trending news and weather forecast.");
-                connector.Conversations.ReplyToActivityAsync(reply);
+                //ConnectorClient connector = new ConnectorClient(new Uri(message.ServiceUrl));
+                //Activity reply = message.CreateReply($"I'm xxx.You can ask anything related to career guidace and apart from that you can get trending news and weather forecast.");
+                //connector.Conversations.ReplyToActivityAsync(reply);
             }
             else if (message.Type == ActivityTypes.ContactRelationUpdate)
             {
